@@ -1,498 +1,591 @@
---[[
-Pixie Hub is a Roblox script that allows you to have higher privileges than the usual player.
-You can have maximum functionality whilst having the most easy to use interface.
-]]
-print(" ")
-print("Pixie Hub debugging logs")
-print("This is usually a place for logs to appear in case an error occurs.")
-print(" ")
-print("[PixieHub] Loading script...")
--- Services
-local Players = game:GetService("Players")
+print([[
+
+   8 888888888o    8 8888 `8.`8888.      ,8'  8 8888 8 8888888888   8 8888        8 8 8888      88 8 888888888o   
+   8 8888    `88.  8 8888  `8.`8888.    ,8'   8 8888 8 8888         8 8888        8 8 8888      88 8 8888    `88. 
+   8 8888     `88  8 8888   `8.`8888.  ,8'    8 8888 8 8888         8 8888        8 8 8888      88 8 8888     `88 
+   8 8888     ,88  8 8888    `8.`8888.,8'     8 8888 8 8888         8 8888        8 8 8888      88 8 8888     ,88 
+   8 8888.   ,88'  8 8888     `8.`88888'      8 8888 8 888888888888 8 8888        8 8 8888      88 8 8888.   ,88' 
+   8 888888888P'   8 8888     .88.`8888.      8 8888 8 8888         8 8888        8 8 8888      88 8 8888888888   
+   8 8888          8 8888    .8'`8.`8888.     8 8888 8 8888         8 8888888888888 8 8888      88 8 8888    `88. 
+   8 8888          8 8888   .8'  `8.`8888.    8 8888 8 8888         8 8888        8 ` 8888     ,8P 8 8888      88 
+   8 8888          8 8888  .8'    `8.`8888.   8 8888 8 8888         8 8888        8   8888   ,d8P  8 8888    ,88' 
+   8 8888          8 8888 .8'      `8.`8888.  8 8888 8 888888888888 8 8888        8    `Y88888P'   8 888888888P   
+
+                                                      Made by Bingsa
+                                                     #1 Hub In Roblox
+]])
+
+local syde = loadstring(game:HttpGet("https://raw.githubusercontent.com/essencejs/syde/refs/heads/main/source", true))()
+
+syde:Load({
+    Logo = '7488932274',
+    Name = 'Pixie Hub',
+    Status = 'Stable',
+    Accent = Color3.fromRGB(251, 144, 255),
+    HitBox = Color3.fromRGB(251, 144, 255),
+    AutoLoad = false,
+    Socials = {},
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = 'SydeDemo',
+        FileName = "config"
+    },
+    AutoJoinDiscord = {
+        Enabled = false,
+        Invite = "CZRZBwPz",
+        RememberJoins = false
+    }
+})
+
+local Window = syde:Init({
+    Title = 'Pixie Hub';
+    SubText = '#1 Hub on Roblox'
+})
+
+local PlayerTab = Window:InitTab('Player')
+local TrollTab = Window:InitTab('Troll')
+local CombatTab = Window:InitTab('Combat')
+local MiscTab = Window:InitTab('Misc')
+
 local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
+local camera = Workspace.CurrentCamera
+local HttpService = game:GetService("HttpService")
 
--- Variables
-local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
-local ScreenGui = Instance.new("ScreenGui")
-local MainFrame = Instance.new("Frame")
-local TitleBar = Instance.new("Frame")
-local Title = Instance.new("TextLabel")
-local CloseButton = Instance.new("TextButton")
-local MinimizeButton = Instance.new("TextButton")
-local ContentFrame = Instance.new("Frame")
+local isFlyActive = false
+local isNoclipActive = false
+local isWalkOnAirActive = false
 
--- Create ScreenGui
-ScreenGui.Name = "PixieHubGui"
-ScreenGui.Parent = PlayerGui
-ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+local flyLoop = nil
+local flyInputBeganConnection = nil
+local flyInputEndedConnection = nil
 
--- Create Main Frame
-MainFrame.Name = "MainFrame"
-MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-MainFrame.BorderSizePixel = 2
-MainFrame.BorderColor3 = Color3.fromRGB(0, 150, 255)
--- Start in exact center with small size for animation
-MainFrame.Position = UDim2.new(0.5, -25, 0.5, -25)
-MainFrame.Size = UDim2.new(0, 50, 0, 50)
-MainFrame.Active = false
-MainFrame.Draggable = false
+local noclipLoopConnection = nil
+local noclipCharacterAddedConnection = nil
+local noclipChildAddedConnection = nil
 
--- Create corner radius for main frame
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 8)
-MainCorner.Parent = MainFrame
+local walkOnAirCharacterAddedConnection = nil
 
--- Create resize handle
-local ResizeHandle = Instance.new("Frame")
-ResizeHandle.Name = "ResizeHandle"
-ResizeHandle.Parent = MainFrame
-ResizeHandle.BackgroundTransparency = 1
-ResizeHandle.Position = UDim2.new(1, -15, 1, -15)
-ResizeHandle.Size = UDim2.new(0, 15, 0, 15)
-ResizeHandle.BorderSizePixel = 0
+local noclipOriginalPartStates = {}
 
--- Create resize icon
-local ResizeIcon = Instance.new("TextLabel")
-ResizeIcon.Name = "ResizeIcon"
-ResizeIcon.Parent = ResizeHandle
-ResizeIcon.BackgroundTransparency = 1
-ResizeIcon.Position = UDim2.new(0, 0, 0, 0)
-ResizeIcon.Size = UDim2.new(1, 0, 1, 0)
-ResizeIcon.Font = Enum.Font.GothamBold
-ResizeIcon.Text = "⤡"
-ResizeIcon.TextColor3 = Color3.fromRGB(100, 100, 100)
-ResizeIcon.TextSize = 12
-ResizeIcon.TextXAlignment = Enum.TextXAlignment.Center
-ResizeIcon.TextYAlignment = Enum.TextYAlignment.Center
--- Start transparent for animation
-ResizeIcon.TextTransparency = 1
+local originalGravity = Workspace.Gravity
+local currentTrail = nil
 
--- Create Title Bar
-TitleBar.Name = "TitleBar"
-TitleBar.Parent = MainFrame
-TitleBar.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-TitleBar.BorderSizePixel = 0
-TitleBar.Position = UDim2.new(0, 0, 0, 0)
-TitleBar.Size = UDim2.new(1, 0, 0, 40)
--- Start transparent for animation
-TitleBar.BackgroundTransparency = 1
+local currentFlyBodyGyro = nil
+local currentFlyBodyVelocity = nil
 
--- Create corner radius for title bar (top corners only)
-local TitleCorner = Instance.new("UICorner")
-TitleCorner.CornerRadius = UDim.new(0, 8)
-TitleCorner.Parent = TitleBar
+local function deactivateFly()
+    if not isFlyActive then return end
+    FLYING = false
+    if flyLoop then task.cancel(flyLoop) flyLoop = nil end
+    if flyInputBeganConnection then flyInputBeganConnection:Disconnect() flyInputBeganConnection = nil end
+    if flyInputEndedConnection then flyInputEndedConnection:Disconnect() flyInputEndedConnection = nil end
 
--- Create Title
-Title.Name = "Title"
-Title.Parent = TitleBar
-Title.BackgroundTransparency = 1
-Title.Position = UDim2.new(0, 15, 0, 0)
-Title.Size = UDim2.new(0, 200, 1, 0)
-Title.Font = Enum.Font.GothamBold
-Title.Text = "Pixie Hub"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 20
-Title.TextXAlignment = Enum.TextXAlignment.Left
--- Start transparent for animation
-Title.TextTransparency = 1
+    if currentFlyBodyGyro and currentFlyBodyGyro.Parent then currentFlyBodyGyro:Destroy() end
+    if currentFlyBodyVelocity and currentFlyBodyVelocity.Parent then currentFlyBodyVelocity:Destroy() end
+    currentFlyBodyGyro = nil
+    currentFlyBodyVelocity = nil
 
--- Create Close Button
-CloseButton.Name = "CloseButton"
-CloseButton.Parent = TitleBar
-CloseButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-CloseButton.BorderSizePixel = 0
-CloseButton.Position = UDim2.new(1, -35, 0, 7)
-CloseButton.Size = UDim2.new(0, 25, 0, 25)
-CloseButton.Font = Enum.Font.GothamBold
-CloseButton.Text = "X"
-CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseButton.TextSize = 14
--- Start transparent for animation
-CloseButton.BackgroundTransparency = 1
-CloseButton.TextTransparency = 1
-
--- Create corner radius for close button
-local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(0, 4)
-CloseCorner.Parent = CloseButton
--- Create Minimize Button
-MinimizeButton.Name = "MinimizeButton"
-MinimizeButton.Parent = TitleBar
-MinimizeButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-MinimizeButton.BorderSizePixel = 0
-MinimizeButton.Position = UDim2.new(1, -65, 0, 7)
-MinimizeButton.Size = UDim2.new(0, 25, 0, 25)
-MinimizeButton.Font = Enum.Font.GothamBold
-MinimizeButton.Text = "-"
-MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-MinimizeButton.TextSize = 14
--- Start transparent for animation
-MinimizeButton.BackgroundTransparency = 1
-MinimizeButton.TextTransparency = 1
-
--- Create corner radius for minimize button
-local MinimizeCorner = Instance.new("UICorner")
-MinimizeCorner.CornerRadius = UDim.new(0, 4)
-MinimizeCorner.Parent = MinimizeButton
-
--- Create Content Frame
-ContentFrame.Name = "ContentFrame"
-ContentFrame.Parent = MainFrame
-ContentFrame.BackgroundTransparency = 1
-ContentFrame.Position = UDim2.new(0, 10, 0, 50)
-ContentFrame.Size = UDim2.new(1, -20, 1, -60)
-
--- Button hover effects
-local function createHoverEffect(button, originalColor, hoverColor)
-    local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-    
-    button.MouseEnter:Connect(function()
-        local tween = TweenService:Create(button, tweenInfo, {BackgroundColor3 = hoverColor})
-        tween:Play()
-    end)
-    
-    button.MouseLeave:Connect(function()
-        local tween = TweenService:Create(button, tweenInfo, {BackgroundColor3 = originalColor})
-        tween:Play()
-    end)
-end
-
--- Apply hover effects
-createHoverEffect(CloseButton, Color3.fromRGB(80, 80, 80), Color3.fromRGB(100, 100, 100))
-createHoverEffect(MinimizeButton, Color3.fromRGB(80, 80, 80), Color3.fromRGB(100, 100, 100))
-
--- Close button functionality
-CloseButton.MouseButton1Click:Connect(function()
-    ScreenGui:Destroy()
-end)
-
--- Minimize button functionality
-local isMinimized = false
-local originalSize = UDim2.new(0, 600, 0, 300)
-local minimizedSize = UDim2.new(0, 600, 0, 40)
-
-MinimizeButton.MouseButton1Click:Connect(function()
-    if isMinimized then
-        -- Restore
-        local tween = TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = originalSize})
-        tween:Play()
-        MinimizeButton.Text = "-"
-        isMinimized = false
-        -- Show content
-        ContentFrame.Visible = true
-    else
-        -- Minimize
-        local tween = TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = minimizedSize})
-        tween:Play()
-        MinimizeButton.Text = "+"
-        isMinimized = true
-        -- Hide content
-        ContentFrame.Visible = false
+    local char = Players.LocalPlayer.Character
+    if char and char:FindFirstChildOfClass('Humanoid') then
+        char:FindFirstChildOfClass('Humanoid').PlatformStand = false
     end
-end)
-
--- Create profile picture frame
-local ProfileFrame = Instance.new("Frame")
-ProfileFrame.Name = "ProfileFrame"
-ProfileFrame.Parent = ContentFrame
-ProfileFrame.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-ProfileFrame.Position = UDim2.new(0.5, -200, 0.5, -60)
-ProfileFrame.Size = UDim2.new(0, 80, 0, 80)
--- Start transparent for animation
-ProfileFrame.BackgroundTransparency = 1
-
--- Create corner radius for profile frame
-local ProfileCorner = Instance.new("UICorner")
-ProfileCorner.CornerRadius = UDim.new(0, 8)
-ProfileCorner.Parent = ProfileFrame
-
--- Create profile picture
-local ProfilePicture = Instance.new("ImageLabel")
-ProfilePicture.Name = "ProfilePicture"
-ProfilePicture.Parent = ProfileFrame
-ProfilePicture.BackgroundTransparency = 1
-ProfilePicture.Position = UDim2.new(0, 0, 0, 0)
-ProfilePicture.Size = UDim2.new(1, 0, 1, 0)
-ProfilePicture.Image = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. Player.UserId .. "&width=180&height=180"
-ProfilePicture.ImageTransparency = 1
-
--- Create corner radius for profile picture
-local PictureCorner = Instance.new("UICorner")
-PictureCorner.CornerRadius = UDim.new(0, 8)
-PictureCorner.Parent = ProfilePicture
-
--- Create greeting label
-local GreetingLabel = Instance.new("TextLabel")
-GreetingLabel.Name = "GreetingLabel"
-GreetingLabel.Parent = ContentFrame
-GreetingLabel.BackgroundTransparency = 1
-GreetingLabel.Position = UDim2.new(0.534, -100, 0.5, -45)
-GreetingLabel.Size = UDim2.new(0, 200, 0, 30)
-GreetingLabel.Font = Enum.Font.GothamBold
-GreetingLabel.Text = "Hello, " .. Player.Name .. "!"
-GreetingLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-GreetingLabel.TextSize = 22
-GreetingLabel.TextXAlignment = Enum.TextXAlignment.Center
--- Start transparent for fade-in animation
-GreetingLabel.TextTransparency = 1
-
--- Create date/time label
-local DateTimeLabel = Instance.new("TextLabel")
-DateTimeLabel.Name = "DateTimeLabel"
-DateTimeLabel.Parent = ContentFrame
-DateTimeLabel.BackgroundTransparency = 1
-DateTimeLabel.Position = UDim2.new(0.5, -150, 0.5, -15)
-DateTimeLabel.Size = UDim2.new(0, 300, 0, 25)
-DateTimeLabel.Font = Enum.Font.Gotham
-DateTimeLabel.Text = "Loading..."
-DateTimeLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-DateTimeLabel.TextSize = 15
-DateTimeLabel.TextXAlignment = Enum.TextXAlignment.Center
--- Start transparent for fade-in animation
-DateTimeLabel.TextTransparency = 1
-
--- Create START button
-local StartButton = Instance.new("TextButton")
-StartButton.Name = "StartButton"
-StartButton.Parent = ContentFrame
-StartButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-StartButton.Position = UDim2.new(0.5, -75, 0.5, 15)
-StartButton.Size = UDim2.new(0, 150, 0, 40)
-StartButton.Font = Enum.Font.GothamBold
-StartButton.Text = "START"
-StartButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-StartButton.TextSize = 18
-StartButton.BorderSizePixel = 0
--- Start transparent for fade-in animation
-StartButton.BackgroundTransparency = 1
-StartButton.TextTransparency = 1
-
--- Create corner radius for START button
-local StartCorner = Instance.new("UICorner")
-StartCorner.CornerRadius = UDim.new(0, 8)
-StartCorner.Parent = StartButton
-
--- START button hover effect
-createHoverEffect(StartButton, Color3.fromRGB(0, 150, 255), Color3.fromRGB(0, 170, 255))
-
--- Create Category Frame (Left Side)
-local CategoryFrame = Instance.new("Frame")
-CategoryFrame.Name = "CategoryFrame"
-CategoryFrame.Parent = ContentFrame
-CategoryFrame.BackgroundTransparency = 1
-CategoryFrame.Position = UDim2.new(0, 0, 0, 0)
-CategoryFrame.Size = UDim2.new(0, 150, 1, 0)
-CategoryFrame.Visible = false
-
--- Create Category ScrollableFrame
-local CategoryScrollFrame = Instance.new("ScrollingFrame")
-CategoryScrollFrame.Name = "CategoryScrollFrame"
-CategoryScrollFrame.Parent = CategoryFrame
-CategoryScrollFrame.BackgroundTransparency = 1
-CategoryScrollFrame.Position = UDim2.new(0, 10, 0, 10)
-CategoryScrollFrame.Size = UDim2.new(1, -20, 1, -20)
-CategoryScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 200)
-CategoryScrollFrame.ScrollBarThickness = 4
-CategoryScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
-
--- Create Content Page Frame (Right Side)
-local ContentPageFrame = Instance.new("Frame")
-ContentPageFrame.Name = "ContentPageFrame"
-ContentPageFrame.Parent = ContentFrame
-ContentPageFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-ContentPageFrame.Position = UDim2.new(0, 160, 0, 0)
-ContentPageFrame.Size = UDim2.new(1, -170, 1, 0)
-ContentPageFrame.Visible = false
-
--- Create corner radius for content page frame
-local ContentPageCorner = Instance.new("UICorner")
-ContentPageCorner.CornerRadius = UDim.new(0, 6)
-ContentPageCorner.Parent = ContentPageFrame
-
--- Create Content ScrollableFrame
-local ContentScrollFrame = Instance.new("ScrollingFrame")
-ContentScrollFrame.Name = "ContentScrollFrame"
-ContentScrollFrame.Parent = ContentPageFrame
-ContentScrollFrame.BackgroundTransparency = 1
-ContentScrollFrame.Position = UDim2.new(0, 15, 0, 15)
-ContentScrollFrame.Size = UDim2.new(1, -30, 1, -30)
-ContentScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 500)
-ContentScrollFrame.ScrollBarThickness = 4
-ContentScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
-
--- START button click functionality
-StartButton.MouseButton1Click:Connect(function()
-    print("[PixieHub] Starting...")
-    -- Hide the starting UI
-    ProfileFrame.Visible = false
-    GreetingLabel.Visible = false
-    DateTimeLabel.Visible = false
-    StartButton.Visible = false
-    
-    -- Show the main UI
-    CategoryFrame.Visible = true
-    ContentPageFrame.Visible = true
-    
-    -- Load changelog by default
-    loadChangelog()
-end)
-
--- Function to update date and time
-local function updateDateTime()
-    local currentTime = os.date("*t")
-    local timeString = string.format("%02d:%02d:%02d", currentTime.hour, currentTime.min, currentTime.sec)
-    local dateString = string.format("%s, %s %d, %d", 
-        os.date("%A", os.time()), 
-        os.date("%B", os.time()), 
-        currentTime.day, 
-        currentTime.year
-    )
-    DateTimeLabel.Text = dateString .. " • " .. timeString
+    pcall(function() camera.CameraType = Enum.CameraType.Custom end)
+    isFlyActive = false
+    syde:Notify({Title = 'Fly', Content = 'Fly is: OFF', Duration = 1})
+    local toggle = PlayerTab:FindToggle("Fly")
+    if toggle then toggle:Set(false) end
 end
 
--- Update time immediately and then every second
-updateDateTime()
-RunService.Heartbeat:Connect(function()
-    updateDateTime()
-end)
+local function deactivateNoclip()
+    if not isNoclipActive then return end
+    if noclipLoopConnection then noclipLoopConnection:Disconnect() noclipLoopConnection = nil end
+    if noclipChildAddedConnection then noclipChildAddedConnection:Disconnect() noclipChildAddedConnection = nil end
+    if noclipCharacterAddedConnection then noclipCharacterAddedConnection:Disconnect() noclipCharacterAddedConnection = nil end
 
--- Function to create category buttons
-local function createCategoryButton(name, position)
-    local button = Instance.new("TextButton")
-    button.Name = name .. "Button"
-    button.Parent = CategoryScrollFrame
-    button.BackgroundTransparency = 1
-    button.Position = UDim2.new(0, 0, 0, position)
-    button.Size = UDim2.new(1, 0, 0, 35)
-    button.Font = Enum.Font.Gotham
-    button.Text = name
-    button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    button.TextSize = 14
-    button.BorderSizePixel = 0
-    
-    -- Create corner radius
-    local buttonCorner = Instance.new("UICorner")
-    buttonCorner.CornerRadius = UDim.new(0, 4)
-    buttonCorner.Parent = button
-    
-    -- Custom hover effect for transparent buttons
-    button.MouseEnter:Connect(function()
-        local tween = TweenService:Create(button, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0, BackgroundColor3 = Color3.fromRGB(80, 80, 80)})
-        tween:Play()
-    end)
-    
-    button.MouseLeave:Connect(function()
-        local tween = TweenService:Create(button, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 1})
-        tween:Play()
-    end)
-    
-    return button
-end
-
--- Create category buttons
-local changelogButton = createCategoryButton("Changelog", 0)
-local scriptsButton = createCategoryButton("Scripts", 45)
-local settingsButton = createCategoryButton("Settings", 90)
-local aboutButton = createCategoryButton("About", 135)
-
--- Function to load changelog
-function loadChangelog()
-    -- Clear existing content
-    for _, child in pairs(ContentScrollFrame:GetChildren()) do
-        child:Destroy()
-    end
-    
-    -- Create changelog content
-    local title = Instance.new("TextLabel")
-    title.Name = "ChangelogTitle"
-    title.Parent = ContentScrollFrame
-    title.BackgroundTransparency = 1
-    title.Position = UDim2.new(0, 0, 0, 0)
-    title.Size = UDim2.new(1, 0, 0, 30)
-    title.Font = Enum.Font.GothamBold
-    title.Text = "Changelog"
-    title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    title.TextSize = 20
-    title.TextXAlignment = Enum.TextXAlignment.Left
-    
-    -- Changelog content (all in one text)
-    local changelogContent = Instance.new("TextLabel")
-    changelogContent.Name = "ChangelogContent"
-    changelogContent.Parent = ContentScrollFrame
-    changelogContent.BackgroundTransparency = 1
-    changelogContent.Position = UDim2.new(0, 0, 0, 40)
-    changelogContent.Size = UDim2.new(1, 0, 0, 400)
-    changelogContent.Font = Enum.Font.Gotham
-    changelogContent.Text = "# Update 2\n• Fixed profile picture loading\n• Improved UI responsiveness\n• Added category system\n+ New changelog page\n+ Real-time date/time display\n- Removed old description text\n\n# Update 1\n• Initial release\n+ Basic UI framework\n+ Profile picture integration\n+ Personalized greeting\n+ Minimize/close functionality"
-    changelogContent.TextColor3 = Color3.fromRGB(200, 200, 200)
-    changelogContent.TextSize = 14
-    changelogContent.TextXAlignment = Enum.TextXAlignment.Left
-    changelogContent.TextYAlignment = Enum.TextYAlignment.Top
-    changelogContent.TextWrapped = true
-end
-
--- Category button click handlers
-changelogButton.MouseButton1Click:Connect(function()
-    loadChangelog()
-end)
-
-scriptsButton.MouseButton1Click:Connect(function()
-    -- Clear content and show scripts page
-    for _, child in pairs(ContentScrollFrame:GetChildren()) do
-        child:Destroy()
-    end
-    
-    local title = Instance.new("TextLabel")
-    title.Name = "ScriptsTitle"
-    title.Parent = ContentScrollFrame
-    title.BackgroundTransparency = 1
-    title.Position = UDim2.new(0, 0, 0, 0)
-    title.Size = UDim2.new(1, 0, 0, 30)
-    title.Font = Enum.Font.GothamBold
-    title.Text = "Scripts"
-    title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    title.TextSize = 20
-    title.TextXAlignment = Enum.TextXAlignment.Left
-    
-    -- Add Goon item button
-    local addGoonButton = Instance.new("TextButton")
-    addGoonButton.Name = "AddGoonButton"
-    addGoonButton.Parent = ContentScrollFrame
-    addGoonButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    addGoonButton.Position = UDim2.new(0, 0, 0, 50)
-    addGoonButton.Size = UDim2.new(0, 200, 0, 35)
-    addGoonButton.Font = Enum.Font.GothamBold
-    addGoonButton.Text = "Add Goon item"
-    addGoonButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    addGoonButton.TextSize = 14
-    addGoonButton.BorderSizePixel = 2
-    addGoonButton.BorderColor3 = Color3.fromRGB(0, 150, 255)
-    
-    -- Create corner radius for button
-    local buttonCorner = Instance.new("UICorner")
-    buttonCorner.CornerRadius = UDim.new(0, 6)
-    buttonCorner.Parent = addGoonButton
-    
-    -- Button hover effect
-    createHoverEffect(addGoonButton, Color3.fromRGB(60, 60, 60), Color3.fromRGB(80, 80, 80))
-    
-    -- Add Goon item functionality
-    addGoonButton.MouseButton1Click:Connect(function()
-        local humanoid = Player.Character:FindFirstChildWhichIsA("Humanoid")
-        local backpack = Player:FindFirstChildWhichIsA("Backpack")
-        if not humanoid or not backpack then 
-            print("[PixieHub] Error: Could not find humanoid or backpack")
-            return 
+    for part, originalState in pairs(noclipOriginalPartStates) do
+        if part and part.Parent then
+            part.CanCollide = originalState.CanCollide
+            part.Massless = originalState.Massless
         end
+    end
+    table.clear(noclipOriginalPartStates)
+
+    isNoclipActive = false
+    syde:Notify({Title = 'Noclip', Content = 'Noclip is: OFF', Duration = 1})
+    local toggle = PlayerTab:FindToggle("Noclip")
+    if toggle then toggle:Set(false) end
+end
+
+local function deactivateWalkOnAir()
+    if not isWalkOnAirActive then return end
+    if walkOnAirCharacterAddedConnection then walkOnAirCharacterAddedConnection:Disconnect() walkOnAirCharacterAddedConnection = nil end
+    if currentTrail then
+        currentTrail:Destroy()
+        currentTrail = nil
+    end
+    isWalkOnAirActive = false
+    syde:Notify({Title = 'Walk on Air', Content = 'Walk on Air is: OFF', Duration = 1})
+    local toggle = PlayerTab:FindToggle("Walk on Air")
+    if toggle then toggle:Set(false) end
+end
+
+local FLYING = false
+local CONTROL = {F = 0, B = 0, L = 0, R = 0, Q = 0, E = 0}
+local currentFlySpeed = 100
+local iyflyspeed = currentFlySpeed
+local vehicleflyspeed = currentFlySpeed * 1.5
+local vfly = false
+local QEfly = true
+
+local function getRoot(character)
+    return character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso")
+end
+
+local function setupFlyPhysics(char)
+    if currentFlyBodyGyro and currentFlyBodyGyro.Parent then currentFlyBodyGyro:Destroy() end
+    if currentFlyBodyVelocity and currentFlyBodyVelocity.Parent then currentFlyBodyVelocity:Destroy() end
+
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    local T = getRoot(char)
+
+    if not humanoid or not T then
+        return false
+    end
+
+    humanoid.PlatformStand = true
+
+    currentFlyBodyGyro = Instance.new('BodyGyro')
+    currentFlyBodyVelocity = Instance.new('BodyVelocity')
+    currentFlyBodyGyro.P = 9e4
+    currentFlyBodyGyro.Parent = T
+    currentFlyBodyVelocity.Parent = T
+    currentFlyBodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+    currentFlyBodyGyro.CFrame = T.CFrame
+    currentFlyBodyVelocity.Velocity = Vector3.new(0, 0, 0)
+    currentFlyBodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+
+    return true
+end
+
+local function activateFly()
+    deactivateWalkOnAir()
+
+    FLYING = true
+    isFlyActive = true
+
+    local char = Players.LocalPlayer.Character
+    if not char then
+        syde:Notify({
+            Title = 'Fly',
+            Content = 'Character not found. Waiting for character to load.',
+            Duration = 3
+        })
+        Players.LocalPlayer.CharacterAdded:Connect(function(newChar)
+            if isFlyActive then
+                if setupFlyPhysics(newChar) then
+                    syde:Notify({Title = 'Fly', Content = 'Fly is: ON (Reapplied after respawn). Use WASD for movement, Q/E for vertical.', Duration = 2})
+                else
+                    syde:Notify({Title = 'Fly', Content = 'Failed to reapply Fly after respawn.', Duration = 3})
+                    deactivateFly()
+                end
+            end
+        end)
+    else
+        if not setupFlyPhysics(char) then
+            syde:Notify({Title = 'Fly', Content = 'Character or Humanoid not found. Cannot activate fly.', Duration = 3})
+            deactivateFly()
+            return
+        end
+    end
+
+    flyLoop = task.spawn(function()
+        repeat task.wait()
+            local currentCamera = Workspace.CurrentCamera
+            local char_in_loop = Players.LocalPlayer.Character
+            local humanoid_in_loop = char_in_loop and char_in_loop:FindFirstChildOfClass("Humanoid")
+            local T_in_loop = char_in_loop and getRoot(char_in_loop)
+
+            if not humanoid_in_loop or not T_in_loop or not currentFlyBodyGyro or not currentFlyBodyVelocity or not currentFlyBodyGyro.Parent or not currentFlyBodyVelocity.Parent then
+                if isFlyActive and char_in_loop then
+                    if setupFlyPhysics(char_in_loop) then
+                        syde:Notify({Title = 'Fly', Content = 'Fly re-establishing connection.', Duration = 1})
+                    else
+                        syde:Notify({Title = 'Fly', Content = 'Fly functionality lost.', Duration = 1})
+                        FLYING = false
+                        break
+                    end
+                else
+                    FLYING = false
+                    break
+                end
+            end
+
+            if humanoid_in_loop then
+                humanoid_in_loop.PlatformStand = true
+            end
+
+            local moveX = CONTROL.R + CONTROL.L
+            local moveY = CONTROL.Q + CONTROL.E
+            local moveZ = CONTROL.F + CONTROL.B
+
+            local desiredDirection = Vector3.new(0, 0, 0)
+            if math.abs(moveX) > 0 or math.abs(moveY) > 0 or math.abs(moveZ) > 0 then
+                local cameraRightVector = currentCamera.CFrame.RightVector
+                local cameraLookVector = currentCamera.CFrame.LookVector
+                local cameraUpVector = currentCamera.CFrame.UpVector
+
+                desiredDirection = (cameraRightVector * moveX) +
+                                   (cameraLookVector * moveZ) +
+                                   (cameraUpVector * moveY)
+
+                desiredDirection = desiredDirection.Unit * currentFlySpeed
+            end
+            
+            currentFlyBodyVelocity.Velocity = desiredDirection
+            currentFlyBodyGyro.CFrame = currentCamera.CFrame
+        until not FLYING
+    end)
+    syde:Notify({Title = 'Fly', Content = 'Fly is: ON. Use WASD for movement, Q/E for vertical.', Duration = 2})
+
+    if not flyInputBeganConnection then
+        flyInputBeganConnection = UserInputService.InputBegan:Connect(function(input, processed)
+            if processed then return end
+            if not isFlyActive then return end
+            if input.KeyCode == Enum.KeyCode.W then
+                CONTROL.F = currentFlySpeed
+            elseif input.KeyCode == Enum.KeyCode.S then
+                CONTROL.B = - currentFlySpeed
+            elseif input.KeyCode == Enum.KeyCode.A then
+                CONTROL.L = - currentFlySpeed
+            elseif input.KeyCode == Enum.KeyCode.D then
+                CONTROL.R = currentFlySpeed
+            elseif input.KeyCode == Enum.KeyCode.E and QEfly then
+                CONTROL.Q = currentFlySpeed
+            elseif input.KeyCode == Enum.KeyCode.Q and QEfly then
+                CONTROL.E = -currentFlySpeed
+            end
+            pcall(function() camera.CameraType = Enum.CameraType.Track end)
+        end)
+    end
+
+    if not flyInputEndedConnection then
+        flyInputEndedEnded = UserInputService.InputEnded:Connect(function(input, processed)
+            if processed then return end
+            if not isFlyActive then return end
+            if input.KeyCode == Enum.KeyCode.W then
+                CONTROL.F = 0
+            elseif input.KeyCode == Enum.KeyCode.S then
+                CONTROL.B = 0
+            elseif input.KeyCode == Enum.KeyCode.A then
+                CONTROL.L = 0
+            elseif input.KeyCode == Enum.KeyCode.D then
+                CONTROL.R = 0
+            elseif input.KeyCode == Enum.KeyCode.E then
+                CONTROL.Q = 0
+            elseif input.KeyCode == Enum.KeyCode.Q then
+                CONTROL.E = 0
+            end
+        end)
+    end
+end
+
+local function activateNoclip()
+    deactivateWalkOnAir()
+
+    isNoclipActive = true
+    local char = Players.LocalPlayer.Character
+    if not char then
+        syde:Notify({Title = 'Noclip', Content = 'Character not found. Cannot activate Noclip.', Duration = 3})
+        deactivateNoclip()
+        return
+    end
+
+    local function NoclipLoopFunction()
+        if isNoclipActive and Players.LocalPlayer.Character then
+            for _, child in pairs(Players.LocalPlayer.Character:GetDescendants()) do
+                if child:IsA("BasePart") then
+                    if not noclipOriginalPartStates[child] then
+                        noclipOriginalPartStates[child] = {
+                            CanCollide = child.CanCollide,
+                            Massless = child.Massless
+                        }
+                    end
+                    child.CanCollide = false
+                    child.Massless = true
+                end
+            end
+        end
+    end
+
+    noclipLoopConnection = RunService.Stepped:Connect(NoclipLoopFunction)
+
+    noclipCharacterAddedConnection = Players.LocalPlayer.CharacterAdded:Connect(function(newChar)
+        if isNoclipActive then
+            deactivateNoclip()
+            activateNoclip()
+            syde:Notify({Title = 'Noclip', Content = 'Noclip is: ON (Reapplied after respawn).', Duration = 2})
+        end
+    end)
+
+    syde:Notify({Title = 'Noclip', Content = 'Noclip is: ON. You will phase through ALL objects (walls and floors). Gravity remains active. Use Walk on Air if you wish to float.', Duration = 5})
+end
+
+
+local function activateWalkOnAir()
+    deactivateFly()
+    deactivateNoclip()
+
+    isWalkOnAirActive = true
+    local char = Players.LocalPlayer.Character
+    if not char then
+        syde:Notify({Title = 'Walk on Air', Content = 'Character not found. Cannot activate Walk on Air.', Duration = 3})
+        deactivateWalkOnAir()
+        return
+    end
+
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if not root then
+        syde:Notify({Title = 'Walk on Air', Content = 'HumanoidRootPart not found. Cannot create trail.', Duration = 3})
+        deactivateWalkOnAir()
+        return
+    end
+
+    currentTrail = Instance.new("Trail")
+    currentTrail.Attachment0 = Instance.new("Attachment", root)
+    currentTrail.Attachment1 = Instance.new("Attachment", root)
+    currentTrail.Lifetime = 2
+    currentTrail.MinLength = 1
+    currentTrail.TextureMode = Enum.TextureMode.Wrap
+    currentTrail.Texture = "rbxassetid://1319779383"
+    currentTrail.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0.00, Color3.fromRGB(255, 0, 0)),
+        ColorSequenceKeypoint.new(0.16, Color3.fromRGB(255, 255, 0)),
+        ColorSequenceKeypoint.new(0.33, Color3.fromRGB(0, 255, 0)),
+        ColorSequenceKeypoint.new(0.50, Color3.fromRGB(0, 255, 255)),
+        ColorSequenceKeypoint.new(0.66, Color3.fromRGB(0, 0, 255)),
+        ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255, 0, 255)),
+        ColorSequenceKeypoint.new(1.00, Color3.fromRGB(255, 0, 0))
+    })
+    currentTrail.WidthScale = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 1),
+        NumberSequenceKeypoint.new(1, 0)
+    })
+    currentTrail.Parent = root
+
+    walkOnAirCharacterAddedConnection = Players.LocalPlayer.CharacterAdded:Connect(function(newChar)
+        if isWalkOnAirActive then
+            deactivateWalkOnAir()
+            activateWalkOnAir()
+        end
+    end)
+    syde:Notify({Title = 'Walk on Air', Content = 'Walk on Air is: ON. A rainbow trail will follow you!', Duration = 2})
+end
+
+
+PlayerTab:CreateSlider({
+    Title = 'Player Settings',
+    Description = 'Adjust various player attributes.',
+    Sliders = {
+        {
+            Title = 'Walk Speed',
+            Range = {16, 100},
+            Increment = 1,
+            StarterValue = 16,
+            CallBack = function(value)
+                if Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
+                    Players.LocalPlayer.Character.Humanoid.WalkSpeed = value
+                end
+            end,
+        },
+        {
+            Title = 'Jump Power',
+            Range = {50, 200},
+            Increment = 5,
+            StarterValue = 50,
+            CallBack = function(value)
+                if Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
+                    Players.LocalPlayer.Character.Humanoid.JumpPower = value
+                end
+            end,
+        },
+        {
+            Title = 'Field of View',
+            Range = {70, 120},
+            Increment = 1,
+            StarterValue = 70,
+            CallBack = function(value)
+                camera.FieldOfView = value
+            end,
+        },
+        {
+            Title = 'Fly Speed',
+            Range = {100, 300},
+            Increment = 1,
+            StarterValue = 100,
+            CallBack = function(value)
+                currentFlySpeed = value
+                iyflyspeed = value
+                vehicleflyspeed = value * 1.5
+            end,
+        },
+        {
+            Title = 'Gravity',
+            Range = {0, 500},
+            Increment = 1,
+            StarterValue = 196,
+            CallBack = function(value)
+                Workspace.Gravity = value
+            end,
+        }
+    }
+})
+
+PlayerTab:Toggle({
+    Title = 'Fly',
+    Description = 'Toggles client-side fly functionality. Will deactivate Walk on Air.',
+    Value = false,
+    CallBack = function(value)
+        if value then
+            activateFly()
+        else
+            deactivateFly()
+        end
+    end,
+})
+
+PlayerTab:Toggle({
+    Title = 'Noclip',
+    Description = 'Phase through all objects (walls and floors). Gravity remains active. Will deactivate Walk on Air.',
+    Value = false,
+    CallBack = function(value)
+        if value then
+            activateNoclip()
+        else
+            deactivateNoclip()
+        end
+    end,
+})
+
+PlayerTab:Toggle({
+    Title = 'Walk on Air',
+    Description = 'A rainbow trail will follow you.',
+    Value = false,
+    CallBack = function(value)
+        if value then
+            activateWalkOnAir()
+        else
+            deactivateWalkOnAir()
+        end
+    end,
+})
+
+
+local player = Players.LocalPlayer
+local egorEnabled = false
+local runAnimId = "rbxassetid://913376220"
+local runTrack
+local runConn
+local lastHumanoid
+local originalWalkSpeed = 16
+
+local function getHumanoid()
+    local char = player.Character or player.CharacterAdded:Wait()
+    return char:FindFirstChildOfClass("Humanoid")
+end
+
+local function playRunAnimation(h)
+    if runConn then runConn:Disconnect() runConn = nil end
+    if runTrack then pcall(function() runTrack:Stop() end) runTrack = nil end
+    local animator = h:FindFirstChildWhichIsA("Animator") or Instance.new("Animator", h)
+    local runAnim = Instance.new("Animation")
+    runAnim.AnimationId = runAnimId
+    runTrack = animator:LoadAnimation(runAnim)
+    runTrack.Priority = Enum.AnimationPriority.Movement
+    runTrack:Play()
+    runTrack:AdjustSpeed(6)
+    runConn = game:GetService("RunService").RenderStepped:Connect(function()
+        if h.Health <= 0 then return end
+        if h.MoveDirection.Magnitude == 0 then
+            if runTrack.IsPlaying then runTrack:Stop() end
+        else
+            if not runTrack.IsPlaying then runTrack:Play(); runTrack:AdjustSpeed(6) end
+        end
+    end)
+end
+
+local function stopRunAnimation()
+    if runConn then runConn:Disconnect() runConn = nil end
+    if runTrack then pcall(function() runTrack:Stop() end) runTrack = nil end
+end
+
+local function enableEgor()
+    local hum = getHumanoid()
+    if not hum then return end
+    lastHumanoid = hum
+    originalWalkSpeed = hum.WalkSpeed
+    hum.WalkSpeed = 3
+    playRunAnimation(hum)
+end
+
+local function disableEgor()
+    stopRunAnimation()
+    local hum = lastHumanoid or getHumanoid()
+    if hum and hum.Parent then
+        hum.WalkSpeed = originalWalkSpeed or 16
+    end
+end
+
+player.CharacterAdded:Connect(function(char)
+    local hum = char:WaitForChild("Humanoid")
+    lastHumanoid = hum
+    if egorEnabled then
+        task.defer(enableEgor)
+    else
+        originalWalkSpeed = hum.WalkSpeed
+        stopRunAnimation()
+    end
+end)
+
+TrollTab:Toggle({
+    Title = 'Toggle Egor',
+    Description = 'Toggles the popular Roblox Egor animation.',
+    Value = false,
+    CallBack = function(value)
+        egorEnabled = value
+        if value then
+            enableEgor()
+        else
+            disableEgor()
+        end
+        syde:Notify({
+            Title = 'Toggle Egor',
+            Content = 'Toggle Egor is: ' .. (value and 'ON' or 'OFF'),
+            Duration = 1
+        })
+    end,
+})
+
+function r15(plr)
+    if plr.Character:FindFirstChildOfClass('Humanoid').RigType == Enum.HumanoidRigType.R15 then
+        return true
+    end
+    return false
+end
+
+TrollTab:Button({
+    Title = 'Give Jerk',
+    Description = 'Get an item that allows you to Jerk Off.',
+    CallBack = function()
+        local humanoid = player.Character:FindFirstChildWhichIsA("Humanoid")
+        local backpack = player:FindFirstChildWhichIsA("Backpack")
+        if not humanoid or not backpack then return end
 
         local tool = Instance.new("Tool")
         tool.Name = "Jerk Off"
-        tool.ToolTip = "in the stripped club. straight up \"jorking it\" . and by \"it\" , haha, well. let's justr say. My peanits."
+        tool.ToolTip = "in the stripped club. straight up \"jorking it\" . and by \"it\" , haha. let's justr say. My peanits."
         tool.RequiresHandle = false
         tool.Parent = backpack
 
@@ -511,243 +604,246 @@ scriptsButton.MouseButton1Click:Connect(function()
         tool.Unequipped:Connect(stopTomfoolery)
         humanoid.Died:Connect(stopTomfoolery)
 
-        -- R15 detection function
-        local function isR15(player)
-            local character = player.Character
-            if character then
-                local humanoid = character:FindFirstChild("Humanoid")
-                if humanoid then
-                    return humanoid.RigType == Enum.HumanoidRigType.R15
-                end
+        while task.wait() do
+            if not jorkin then continue end
+            local isR15 = r15(player)
+            if not track then
+                local anim = Instance.new("Animation")
+                anim.AnimationId = not isR15 and "rbxassetid://72042024" or "rbxassetid://698251653"
+                track = humanoid:LoadAnimation(anim)
             end
-            return false
+
+            track:Play()
+            track:AdjustSpeed(isR15 and 0.7 or 0.65)
+            track.TimePosition = 0.6
+            task.wait(0.1)
+            while track and track.TimePosition < (not isR15 and 0.65 or 0.7) do task.wait(0.1) end
+            if track then
+                track:Stop()
+                track = nil
+            end
         end
 
-        -- Animation loop
-        spawn(function()
-            while task.wait() do
-                if not jorkin then continue end
+        syde:Notify({
+            Title = 'Give Jerk',
+            Content = 'Jerk item has been given.',
+            Duration = 2
+        })
+    end,
+})
+TrollTab:Button({
+    Title = 'FE Hamsterball',
+    Description = 'A GUI that toggles the usual movement into a hamster in a ball!',
+    CallBack = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/KaterHub-Inc/scripts/refs/heads/main/unofficial-Projects/FEHamsterBall.lua"))()
+        syde:Notify({
+            Title = 'FE Hamsterball',
+            Content = 'FE Hamsterball has been loaded.',
+            Duration = 2
+        })
+    end,
+})
 
-                local isR15Player = isR15(Player)
-                if not track then
-                    local anim = Instance.new("Animation")
-                    anim.AnimationId = not isR15Player and "rbxassetid://72042024" or "rbxassetid://698251653"
-                    track = humanoid:LoadAnimation(anim)
+local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
+local TracersScreenGui = Instance.new("ScreenGui")
+TracersScreenGui.Name = "TracersScreenGui"
+TracersScreenGui.DisplayOrder = 10
+TracersScreenGui.Parent = PlayerGui
+
+local isTracing = false
+local tracersLoop
+local activeTracerFrames = {}
+
+CombatTab:Toggle({
+    Title = 'Toggle Tracers',
+    Value = false,
+    CallBack = function(value)
+        isTracing = value
+        if value then
+            tracersLoop = task.spawn(function()
+                local currentCamera = Workspace.CurrentCamera
+                local localPlayer = Players.LocalPlayer
+
+                while isTracing do
+                    for _, frame in ipairs(activeTracerFrames) do
+                        frame:Destroy()
+                    end
+                    table.clear(activeTracerFrames)
+
+                    local myTorso = localPlayer.Character and (localPlayer.Character:FindFirstChild("Torso") or localPlayer.Character:FindFirstChild("HumanoidRootPart"))
+                    if myTorso then
+                        local myPosition = currentCamera:WorldToScreenPoint(myTorso.Position)
+                        local my2DPos = Vector2.new(myPosition.X, myPosition.Y)
+
+                        for _, p in ipairs(Players:GetPlayers()) do
+                            if p ~= localPlayer and p.Character then
+                                local targetTorso = p.Character:FindFirstChild("Torso") or p.Character:FindFirstChild("HumanoidRootPart")
+                                if targetTorso then
+                                    local targetPosition = currentCamera:WorldToScreenPoint(targetTorso.Position)
+                                    
+                                    if targetPosition.Z > 0 then
+                                        local target2DPos = Vector2.new(targetPosition.X, targetPosition.Y)
+                                        
+                                        local directionVector = target2DPos - my2DPos
+                                        local distance = directionVector.Magnitude
+                                        local angle = math.atan2(directionVector.Y, directionVector.X)
+
+                                        local midPoint2D = my2DPos + directionVector / 2
+
+                                        local tracerFrame = Instance.new("Frame")
+                                        tracerFrame.Name = "TracerLine"
+                                        tracerFrame.Size = UDim2.new(0, distance, 0, 2)
+                                        tracerFrame.Position = UDim2.new(0, midPoint2D.X, 0, midPoint2D.Y)
+                                        tracerFrame.Rotation = math.deg(angle)
+                                        tracerFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+                                        tracerFrame.BackgroundColor3 = Color3.new(1, 1, 1)
+                                        tracerFrame.BackgroundTransparency = 0.3
+                                        tracerFrame.ZIndex = 2
+                                        tracerFrame.Parent = TracersScreenGui
+                                        table.insert(activeTracerFrames, tracerFrame)
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    task.wait()
                 end
+            end)
+        else
+            if tracersLoop then
+                task.cancel(tracersLoop)
+                tracersLoop = nil
+            end
+            for _, frame in ipairs(activeTracerFrames) do
+                frame:Destroy()
+            end
+            table.clear(activeTracerFrames)
+        end
+        syde:Notify({
+            Title = 'Toggle Tracers',
+            Content = 'Toggle Tracers is: ' .. (value and 'ON' or 'OFF'),
+            Duration = 1
+        })
+    end,
+})
 
-                track:Play()
-                track:AdjustSpeed(isR15Player and 0.7 or 0.65)
-                track.TimePosition = 0.6
-                task.wait(0.1)
-                while track and track.TimePosition < (not isR15Player and 0.65 or 0.7) do task.wait(0.1) end
-                if track then
-                    track:Stop()
-                    track = nil
+--- Misc Tab
+MiscTab:Button({
+    Title = 'Rejoin',
+    CallBack = function()
+        game:GetService("TeleportService"):Teleport(game.PlaceId)
+        syde:Notify({
+            Title = 'Rejoin',
+            Content = 'Attempting to rejoin the server...',
+            Duration = 1
+        })
+    end,
+})
+
+MiscTab:Button({
+    Title = 'Rejoin & Execute',
+    Description = 'This will only teleport you. To execute the script, copy the code printed to the console and paste it when you load into the new server.',
+    CallBack = function()
+        -- The "Rejoin & Execute" functionality requires an exploit-specific feature that can queue a script
+        -- to run after a teleport. Since we cannot rely on a universal function, this button
+        -- will simply teleport the user and provide the script's source code to the console
+        -- for easy copying and manual execution.
+
+        local teleportService = game:GetService("TeleportService")
+        local placeId = game.PlaceId
+        
+        -- Print the source code to the console for the user to copy.
+        local sourceCode = game:HttpGet("https://raw.githubusercontent.com/essencejs/syde/refs/heads/main/source", true)
+        print("-------------------- COPY SCRIPT SOURCE BELOW THIS LINE --------------------")
+        print(sourceCode)
+        print("-------------------- COPY SCRIPT SOURCE ABOVE THIS LINE --------------------")
+        
+        -- Notify the user that they will be teleported.
+        syde:Notify({
+            Title = 'Rejoin & Execute',
+            Content = 'Teleporting now... Copy the source from your console to re-execute.',
+            Duration = 3
+        })
+        
+        -- Teleport the player.
+        teleportService:Teleport(placeId)
+    end,
+})
+
+local isAntiAfkActive = false
+local antiAfkLoop
+
+MiscTab:Toggle({
+    Title = 'Anti-AFK (Camera Adjust)',
+    Description = 'Prevents being kicked for inactivity by making tiny camera adjustments.',
+    Value = false,
+    CallBack = function(value)
+        isAntiAfkActive = value
+        if value then
+            antiAfkLoop = task.spawn(function()
+                while isAntiAfkActive do
+                    camera.CFrame = camera.CFrame * CFrame.Angles(0, math.rad(0.01), 0)
+                    task.wait(0.5)
+                    camera.CFrame = camera.CFrame * CFrame.Angles(0, math.rad(-0.01), 0)
+                    task.wait(10)
                 end
+            end)
+            syde:Notify({
+                Title = 'Anti-AFK',
+                Content = 'Anti-AFK (Camera Adjust) is: ON',
+                Duration = 1
+            })
+        else
+            if antiAfkLoop then
+                task.cancel(antiAfkLoop)
+                antiAfkLoop = nil
             end
-        end)
-        
-        print("[PixieHub] Goon item added to backpack!")
-    end)
-end)
+            syde:Notify({
+                Title = 'Anti-AFK',
+                Content = 'Anti-AFK (Camera Adjust) is: OFF',
+                Duration = 1
+            })
+        end
+    end,
+})
 
-settingsButton.MouseButton1Click:Connect(function()
-    -- Clear content and show settings page
-    for _, child in pairs(ContentScrollFrame:GetChildren()) do
-        child:Destroy()
-    end
-    
-    local title = Instance.new("TextLabel")
-    title.Name = "SettingsTitle"
-    title.Parent = ContentScrollFrame
-    title.BackgroundTransparency = 1
-    title.Position = UDim2.new(0, 0, 0, 0)
-    title.Size = UDim2.new(1, 0, 0, 30)
-    title.Font = Enum.Font.GothamBold
-    title.Text = "Settings"
-    title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    title.TextSize = 20
-    title.TextXAlignment = Enum.TextXAlignment.Left
-end)
+local isFullbrightActive = false
+local originalBrightness = game.Lighting.Brightness
+local originalAmbient = game.Lighting.Ambient
+local originalOutdoorAmbient = game.Lighting.OutdoorAmbient
+local originalFogEnd = game.Lighting.FogEnd
 
-aboutButton.MouseButton1Click:Connect(function()
-    -- Clear content and show about page
-    for _, child in pairs(ContentScrollFrame:GetChildren()) do
-        child:Destroy()
-    end
-    
-    local title = Instance.new("TextLabel")
-    title.Name = "AboutTitle"
-    title.Parent = ContentScrollFrame
-    title.BackgroundTransparency = 1
-    title.Position = UDim2.new(0, 0, 0, 0)
-    title.Size = UDim2.new(1, 0, 0, 30)
-    title.Font = Enum.Font.GothamBold
-    title.Text = "About"
-    title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    title.TextSize = 20
-    title.TextXAlignment = Enum.TextXAlignment.Left
-end)
+MiscTab:Toggle({
+    Title = 'Fullbright',
+    Description = 'Eliminates darkness, making everything fully bright.',
+    Value = false,
+    CallBack = function(value)
+        isFullbrightActive = value
+        if value then
+            originalBrightness = game.Lighting.Brightness
+            originalAmbient = game.Lighting.Ambient
+            originalOutdoorAmbient = game.Lighting.OutdoorAmbient
+            originalFogEnd = game.Lighting.FogEnd
 
--- Make the window draggable from the title bar
-local UserInputService = game:GetService("UserInputService")
-local dragging
-local dragInput
-local dragStart
-local startPos
-
-local function update(input)
-    local delta = input.Position - dragStart
-    MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-end
-
-TitleBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        startPos = MainFrame.Position
-        
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
-
-TitleBar.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        dragInput = input
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        update(input)
-    end
-end)
-
--- Resize functionality
-local resizing = false
-local resizeStart
-local startSize
-
-ResizeHandle.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        resizing = true
-        resizeStart = input.Position
-        startSize = MainFrame.Size
-        
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                resizing = false
-            end
-        end)
-    end
-end)
-
-ResizeHandle.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        dragInput = input
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and resizing then
-        local delta = input.Position - resizeStart
-        local newWidth = math.max(400, startSize.X.Offset + delta.X)
-        local newHeight = math.max(200, startSize.Y.Offset + delta.Y)
-        MainFrame.Size = UDim2.new(0, newWidth, 0, newHeight)
-        
-        -- Update original size for minimize functionality
-        originalSize = MainFrame.Size
-    end
-end)
-
--- Animation sequence when GUI loads
-local function playLoadingAnimation()
-    -- Final sizes and positions
-    local finalSize = UDim2.new(0, 600, 0, 300)
-    local finalPosition = UDim2.new(0.5, -300, 0.5, -150)
-    local verticalSize = UDim2.new(0, 50, 0, 300)
-    local verticalPosition = UDim2.new(0.5, -25, 0.5, -150)
-    
-    -- Step 1: Stretch vertically from center (0.5 seconds)
-    local verticalTween = TweenService:Create(
-        MainFrame, 
-        TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), 
-        {Size = verticalSize, Position = verticalPosition}
-    )
-    
-    verticalTween:Play()
-    
-    -- Step 2: Stretch horizontally from center after vertical animation completes (0.5 seconds)
-    verticalTween.Completed:Connect(function()
-        local horizontalTween = TweenService:Create(
-            MainFrame, 
-            TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), 
-            {Size = finalSize, Position = finalPosition}
-        )
-        
-        horizontalTween:Play()
-        
-        -- Step 3: Fade in ALL UI elements after horizontal animation completes
-        horizontalTween.Completed:Connect(function()
-            local fadeInInfo = TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-            
-            -- Fade in title bar
-            local titleBarTween = TweenService:Create(TitleBar, fadeInInfo, {BackgroundTransparency = 0})
-            
-            -- Fade in title text
-            local titleTween = TweenService:Create(Title, fadeInInfo, {TextTransparency = 0})
-            
-            -- Fade in close button
-            local closeBgTween = TweenService:Create(CloseButton, fadeInInfo, {BackgroundTransparency = 0})
-            local closeTextTween = TweenService:Create(CloseButton, fadeInInfo, {TextTransparency = 0})
-            
-            -- Fade in minimize button
-            local minBgTween = TweenService:Create(MinimizeButton, fadeInInfo, {BackgroundTransparency = 0})
-            local minTextTween = TweenService:Create(MinimizeButton, fadeInInfo, {TextTransparency = 0})
-            
-            -- Fade in resize icon
-            local resizeTween = TweenService:Create(ResizeIcon, fadeInInfo, {TextTransparency = 0})
-            
-            -- Fade in profile frame
-            local profileFrameTween = TweenService:Create(ProfileFrame, fadeInInfo, {BackgroundTransparency = 0})
-            
-            -- Fade in profile picture
-            local profileTween = TweenService:Create(ProfilePicture, fadeInInfo, {ImageTransparency = 0})
-            
-            -- Fade in greeting label
-            local greetingTween = TweenService:Create(GreetingLabel, fadeInInfo, {TextTransparency = 0})
-            
-            -- Fade in date/time label
-            local dateTimeTween = TweenService:Create(DateTimeLabel, fadeInInfo, {TextTransparency = 0})
-            
-            -- Fade in START button
-            local startBgTween = TweenService:Create(StartButton, fadeInInfo, {BackgroundTransparency = 0})
-            local startTextTween = TweenService:Create(StartButton, fadeInInfo, {TextTransparency = 0})
-            
-            -- Play all fade-in animations simultaneously
-            titleBarTween:Play()
-            titleTween:Play()
-            closeBgTween:Play()
-            closeTextTween:Play()
-            minBgTween:Play()
-            minTextTween:Play()
-            resizeTween:Play()
-            profileFrameTween:Play()
-            profileTween:Play()
-            greetingTween:Play()
-            dateTimeTween:Play()
-            startBgTween:Play()
-            startTextTween:Play()
-        end)
-    end)
-end
-
--- Start the loading animation after a brief delay
-task.wait(0.1)
-playLoadingAnimation()
-
-print("[PixieHub] Loaded successfully!")
+            game.Lighting.Brightness = 2
+            game.Lighting.Ambient = Color3.new(1, 1, 1)
+            game.Lighting.OutdoorAmbient = Color3.new(1, 1, 1)
+            game.Lighting.FogEnd = 1000000
+            syde:Notify({
+                Title = 'Fullbright',
+                Content = 'Fullbright is: ON',
+                Duration = 1
+            })
+        else
+            game.Lighting.Brightness = originalBrightness
+            game.Lighting.Ambient = originalAmbient
+            game.Lighting.OutdoorAmbient = originalOutdoorAmbient
+            game.Lighting.FogEnd = originalFogEnd
+            syde:Notify({
+                Title = 'Fullbright',
+                Content = 'Fullbright is: OFF',
+                Duration = 1
+            })
+        end
+    end,
+})
